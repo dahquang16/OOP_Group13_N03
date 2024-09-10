@@ -1,0 +1,48 @@
+public interface Signal {
+    double getValueAt(int n);
+}
+public class DiscreteSignal implements Signal {
+    private double[] sam; 
+
+    public DiscreteSignal(double[] sam) {
+        this.sam = sam;
+    }
+
+    @Override
+    public double getValueAt(int n) {
+        if (n >= 0 && n < sam.length) {
+            return sam[n];
+        } else {
+            return 0; 
+        }
+    }
+  public String display() {
+    if (sam.length == 0) {
+        return 0;
+    }
+
+    String s = new String();
+    for (int i = 0; i < sam.length; i++) {
+        sb.append(samples[i]).append(i));
+    }
+    return s.string(0, s.length() - 2); 
+  }
+}
+
+public class Radar {
+    public double cal(int n) {
+        if (n >= 0 && n <= 15) {
+            return (1 - (double)n / 15);
+        } else {
+            return 0;
+        }
+    }
+    public static void main(String[] args) {
+        double[] sam;
+        DiscreteSignal signal = new DiscreteSignal(sam);
+        System.out.println(signal.getValueAt(2));
+        Radar radar = new Radar();
+        double val= radar.cal(4);
+        System.out.println(val);
+    }
+}
