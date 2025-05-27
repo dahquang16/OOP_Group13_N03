@@ -20,41 +20,52 @@ Get-ChildItem -Path $inputFolder -Filter *.java -Recurse | ForEach-Object {
     foreach ($block in $commentBlocks) {
         $text = $block.Groups[1].Value
 
-        # Match dòng: * 11 - 1
         if ($text -match '\*\s*([0-9]+)\s*-\s*([0-9]+)') {
             $id1 = $matches[1]
             $id2 = $matches[2]
 
-            # Tìm TestItem 1:
-            $desc = ""
-            if ($text -match 'TestItem\s*1\s*:\s*(.+)') {
-                $desc = $matches[1].Trim()
-                if ($desc -eq "None") { $desc = "" }
-            }
+            # TestItem 1-3: nếu không tìm thấy thì để trống, nếu là None thì ghi "None"
+            $testItem1 = if ($text -match 'TestItem\s*1\s*:\s*(.+)') { $matches[1].Trim() } else { "" }
+            $testItem2 = if ($text -match 'TestItem\s*2\s*:\s*(.+)') { $matches[1].Trim() } else { "" }
+            $testItem3 = if ($text -match 'TestItem\s*3\s*:\s*(.+)') { $matches[1].Trim() } else { "" }
 
-            # Tìm Expect:
-            $expect = ""
-            if ($text -match "(?ms)\*\s*Expect\s*:\s*(.*?)($|\n\s*\*\s*$|\*/)") {
-                $rawExpect = $matches[1]
-                $expectLines = ($rawExpect -split "`r?`n" | ForEach-Object {
-                    ($_ -replace '^\s*\*\s*', '').Trim()
-                }) | Where-Object { $_ -ne "None" -and $_ -ne "" }
+           # Expect: lấy nhiều dòng và đảm bảo xuống dòng trong Excel
+$expect = ""
+if ($text -match "(?ms)\*\s*Expect\s*:\s*(.*)") {
+    $lines = $matches[1] -split "`r?`n"
+    $expectLines = @()
+    foreach ($line in $lines) {
+        $trimmed = ($line -replace '^\s*\*\s*', '').Trim()
+        if ($trimmed -match '^\*?\s*(TestItem|[0-9]+\s*-\s*[0-9]+|$)') { break }
+        if ($trimmed -ne "") { $expectLines += $trimmed }
+    }
+    if ($expectLines.Count -gt 0) {
+        $expect = '"' + ($expectLines -join "`r`n") + '"'
+    }
+}
 
-                if ($expectLines.Count -gt 0) {
-                    $expect = '"' + ($expectLines -join "`r`n") + '"'
-                }
-            }
 
-            # Gộp dòng dữ liệu theo format
-            $line = "`t`t$id1`t$id2`t`t$desc" + ("`t" * 9) + "$expect"
+            # Tạo dòng với đúng số tab (Expect nằm cột O)
+            $line = @(
+                "", "",          # A-B
+                $id1,            # C
+                $id2,            # D
+                "", "",          # E-F
+                $testItem1,      # G
+                $testItem2,      # H
+                $testItem3,      # I
+                "", "", "", "", "", # J-N
+                $expect          # O
+            ) -join "`t"
+
             $results += $line
         }
     }
 
     if ($results.Count -gt 0) {
         Set-Content -Path $outputFile -Value $results -Encoding UTF8
-        Write-Host "✅ da xuat: $inputFile → $outputFile"
+        Write-Host "✅ Đã xuất: $inputFile → $outputFile"
     } else {
-        Write-Host "⚠️ khong tim thay noi dung hop le: $inputFile"
+        Write-Host "⚠️ Không tìm thấy nội dung hợp lệ: $inputFile"
     }
 }
